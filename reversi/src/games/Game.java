@@ -17,9 +17,17 @@ public abstract class Game {
 	 * @author Ziv Ronen, Ophir De Jager
 	 * Thrown when no next state is available.
 	 */
-	class NoNextStateException extends Exception{
-		private static final long serialVersionUID = 6288398293749830799L;
-		};
+	public class NoNextStateException extends Exception{
+		private static final long serialVersionUID = 1L;
+		}
+	
+	/**
+	 * 
+	 * @author Ophir De Jager
+	 * Thrown when given game is a terminal state but was expected to be non-terminal
+	 */
+	public class NotTerminalStateException extends Exception{
+		private static final long serialVersionUID = 2L;}
 
 	private List<Game> randomLeft;
 	private Random rnd;	
@@ -33,7 +41,7 @@ public abstract class Game {
 	 * A predicate to determine that the game ended.
 	 * @return True if and only if the state is final state.
 	 */
-	public abstract boolean isTerminateState();
+	public abstract boolean isTerminalState();
 	
 	/**
 	 * 
@@ -43,16 +51,17 @@ public abstract class Game {
 	
 	/**
 	 * 
-	 * @return the amount of player
+	 * @return the number of players
 	 */
-	public abstract int getPlayersAmount();
+	public abstract int getNumPlayers();
 	
 	/**
 	 * Return the value of the game if the game was over for the given player.
 	 * @param player The player we want the value for.
-	 * @return return The value (a number in the range [0,100]) of the game if the game is terminated.
+	 * @return the value (a number in the range [0,100]) of the game if the game is terminated.
+	 * @throws NotTerminalStateException if game did not terminate
 	 */
-	public abstract int goalValue(int player) ;
+	public abstract int goalValue(int player) throws NotTerminalStateException;
 	
 	/**
 	 * Return a new successor.
@@ -80,9 +89,9 @@ public abstract class Game {
 	
 	/**
 	 * 
-	 * @return an array of the values of each feature of the game (same order every time).
+	 * @return a mapping from feature name to its game value.
 	 */
-	public abstract Map<Attribute, Double> getFeaturesValues();
+	public abstract Map<String, Double> getFeaturesValues();
 	
 	/**
 	 * || for tests/experiments only!  should not be used in learning!! ||

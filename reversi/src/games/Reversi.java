@@ -27,7 +27,7 @@ public class Reversi extends BoardGame2P {
 	}
 
 	@Override
-	public boolean isTerminateState() {
+	public boolean isTerminalState() {
 		return turn + 4 >= boardSize * boardSize;
 	}
 
@@ -37,12 +37,13 @@ public class Reversi extends BoardGame2P {
 	}
 
 	@Override
-	public int getPlayersAmount() {
+	public int getNumPlayers() {
 		return 2;
 	}
 
 	@Override
-	public int goalValue(int player) {
+	public int goalValue(int player) throws NotTerminalStateException{
+		if(!isTerminalState()) throw new NotTerminalStateException();
 		int whiteScore = 0;
 		if(numOfPieces(Players.WHITE) > numOfPieces(Players.BLACK)){
 			whiteScore = 100;

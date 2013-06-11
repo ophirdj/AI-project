@@ -6,8 +6,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import weka.core.Attribute;
-
 /**
  * class for representing 2 player board game (generic)
  * @author Ophir De Jager
@@ -72,13 +70,13 @@ public abstract class BoardGame2P extends Game{
 	/**
 	 * board size
 	 */
-	protected int boardSize;
+	protected final int boardSize;
 	
 	public BoardGame2P(int size) {
 		board = new Players[size][size];
 		boardSize = size;
-		for (int i = 0; i < board.length; i++) {
-			for (int j = 0; j < board[i].length; j++) {
+		for (int i = 0; i < boardSize; i++) {
+			for (int j = 0; j < boardSize; j++) {
 				board[i][j] = Players.EMPTY;
 			}
 		}
@@ -88,8 +86,8 @@ public abstract class BoardGame2P extends Game{
 		int size = boardGame.boardSize;
 		board = new Players[size][size];
 		boardSize = size;
-		for (int i = 0; i < board.length; i++) {
-			for (int j = 0; j < board[i].length; j++) {
+		for (int i = 0; i < boardSize; i++) {
+			for (int j = 0; j < boardSize; j++) {
 				board[i][j] = boardGame.board[i][j];
 			}
 		}
@@ -100,49 +98,49 @@ public abstract class BoardGame2P extends Game{
 	 * @param boardSize - board size
 	 * @return the list of features used to value a board
 	 */
-	public static List<Attribute> getFeatures(int boardSize) {
-		List<Attribute> features = new ArrayList<Attribute>();
-		features.add(new Attribute("num pieces (white)"));
-		features.add(new Attribute("num pieces (black)"));
-		features.add(new Attribute("num pieces (white - black)"));
-		features.add(new Attribute("num pieces (white / black)"));
-		for(int i = 0; i < boardSize; i++) features.add(new Attribute("num pieces (white) in row " + (i+1)));
-		for(int i = 0; i < boardSize; i++) features.add(new Attribute("num pieces (black) in row " + (i+1)));
-		for(int i = 0; i < boardSize; i++) features.add(new Attribute("num pieces (white) in col " + (i+1)));
-		for(int i = 0; i < boardSize; i++) features.add(new Attribute("num pieces (black) in col " + (i+1)));
-		features.add(new Attribute("num pieces (white) in centre small"));
-		features.add(new Attribute("num pieces (black) in centre small"));
-		features.add(new Attribute("num pieces (white - black) in centre small"));
-		features.add(new Attribute("num pieces (white / black) in centre small"));
-		features.add(new Attribute("num pieces (white) in centre large"));
-		features.add(new Attribute("num pieces (black) in centre large"));
-		features.add(new Attribute("num pieces (white - black) in centre large"));
-		features.add(new Attribute("num pieces (white / black) in centre large"));
-		features.add(new Attribute("num pieces (white) in corners"));
-		features.add(new Attribute("num pieces (black) in corners"));
-		features.add(new Attribute("num pieces (white - black) in corners"));
-		features.add(new Attribute("num pieces (white / black) in corners"));
-		for(int i = 0; i < 2*boardSize - 1; i++) features.add(new Attribute("num pieces (white) in main diagonal " + (i+1)));
-		for(int i = 0; i < 2*boardSize - 1; i++) features.add(new Attribute("num pieces (black) in main diagonal " + (i+1)));
-		for(int i = 0; i < 2*boardSize - 1; i++) features.add(new Attribute("num pieces (white) in sub diagonal " + (i+1)));
-		for(int i = 0; i < 2*boardSize - 1; i++) features.add(new Attribute("num pieces (black) in sub diagonal " + (i+1)));
-		features.add(new Attribute("minimal piece distance to end (white)"));
-		features.add(new Attribute("minimal piece distance to end (black)"));
-		features.add(new Attribute("minimal piece distance to end (white - black)"));
-		features.add(new Attribute("minimal piece distance to end (white / black)"));
-		features.add(new Attribute("number of legal moves (white)"));
-		features.add(new Attribute("number of legal moves (black)"));
-		features.add(new Attribute("number of legal moves (white - black)"));
-		features.add(new Attribute("number of legal moves (white / black)"));
-		features.add(new Attribute("white player turn"));
-		features.add(new Attribute("turn number"));
+	public static List<String> getFeatures(int boardSize) {
+		List<String> features = new ArrayList<String>();
+		features.add(new String("num pieces (white)"));
+		features.add(new String("num pieces (black)"));
+		features.add(new String("num pieces (white - black)"));
+		features.add(new String("num pieces (white / black)"));
+		for(int i = 0; i < boardSize; i++) features.add(new String("num pieces (white) in row " + (i+1)));
+		for(int i = 0; i < boardSize; i++) features.add(new String("num pieces (black) in row " + (i+1)));
+		for(int i = 0; i < boardSize; i++) features.add(new String("num pieces (white) in col " + (i+1)));
+		for(int i = 0; i < boardSize; i++) features.add(new String("num pieces (black) in col " + (i+1)));
+		features.add(new String("num pieces (white) in centre small"));
+		features.add(new String("num pieces (black) in centre small"));
+		features.add(new String("num pieces (white - black) in centre small"));
+		features.add(new String("num pieces (white / black) in centre small"));
+		features.add(new String("num pieces (white) in centre large"));
+		features.add(new String("num pieces (black) in centre large"));
+		features.add(new String("num pieces (white - black) in centre large"));
+		features.add(new String("num pieces (white / black) in centre large"));
+		features.add(new String("num pieces (white) in corners"));
+		features.add(new String("num pieces (black) in corners"));
+		features.add(new String("num pieces (white - black) in corners"));
+		features.add(new String("num pieces (white / black) in corners"));
+		for(int i = 0; i < 2*boardSize - 1; i++) features.add(new String("num pieces (white) in main diagonal " + (i+1)));
+		for(int i = 0; i < 2*boardSize - 1; i++) features.add(new String("num pieces (black) in main diagonal " + (i+1)));
+		for(int i = 0; i < 2*boardSize - 1; i++) features.add(new String("num pieces (white) in sub diagonal " + (i+1)));
+		for(int i = 0; i < 2*boardSize - 1; i++) features.add(new String("num pieces (black) in sub diagonal " + (i+1)));
+		features.add(new String("minimal piece distance to end (white)"));
+		features.add(new String("minimal piece distance to end (black)"));
+		features.add(new String("minimal piece distance to end (white - black)"));
+		features.add(new String("minimal piece distance to end (white / black)"));
+		features.add(new String("number of legal moves (white)"));
+		features.add(new String("number of legal moves (black)"));
+		features.add(new String("number of legal moves (white - black)"));
+		features.add(new String("number of legal moves (white / black)"));
+		features.add(new String("white player turn"));
+		features.add(new String("turn number"));
 		return features;
 	}
 	
 	@Override
-	public Map<Attribute, Double> getFeaturesValues() {
-		Map<Attribute, Double> values = new HashMap<Attribute, Double>();
-		List<Attribute> features = getFeatures(boardSize);
+	public Map<String, Double> getFeaturesValues() {
+		Map<String, Double> values = new HashMap<String, Double>();
+		List<String> features = getFeatures(boardSize);
 		
 		double numOfWhitePieces = numOfPieces(Players.WHITE);
 		double numOfBlackPieces = numOfPieces(Players.BLACK);
@@ -206,8 +204,8 @@ public abstract class BoardGame2P extends Game{
 	 * @param paramWhite - white value
 	 * @param paramBlack - black value
 	 */
-	private void AddFourFeature(Map<Attribute, Double> values,
-			List<Attribute> features, double paramWhite,
+	private void AddFourFeature(Map<String, Double> values,
+			List<String> features, double paramWhite,
 			double paramBlack) {
 		values.put(features.remove(0) , paramWhite);
 		values.put(features.remove(0) , paramBlack);
@@ -228,8 +226,8 @@ public abstract class BoardGame2P extends Game{
 	 * @return index of lowest player piece
 	 */
 	protected double minimalDistanceDown(Players p) {
-		for (int i = boardSize - 1; i >= 0; i++) {
-			for (int j = 0; j < board[i].length; j++) {
+		for (int i = boardSize - 1; i >= 0; i--) {
+			for (int j = 0; j < boardSize; j++) {
 				if(p == board[i][j]) return (boardSize-1)-i;
 			}
 		}
@@ -242,8 +240,8 @@ public abstract class BoardGame2P extends Game{
 	 * @return index of highest player piece
 	 */
 	protected double minimalDistanceUp(Players p) {
-		for (int i = 0; i < board.length; i++) {
-			for (int j = 0; j < board[i].length; j++) {
+		for (int i = 0; i < boardSize; i++) {
+			for (int j = 0; j < boardSize; j++) {
 				if(p == board[i][j]) return i;
 			}
 		}
@@ -356,7 +354,7 @@ public abstract class BoardGame2P extends Game{
 	 */
 	protected double numOfPiecesCol(Players p, int j) {
 		int count = 0;
-		for (int i = 0; i < board.length; j++) {
+		for (int i = 0; i < board.length; i++) {
 			if(board[i][j] == p) count++;
 		}
 		return count;
@@ -371,7 +369,7 @@ public abstract class BoardGame2P extends Game{
 	 */
 	protected double numOfPiecesRow(Players p, int i) {
 		int count = 0;
-		for (int j = 0; j < board[i].length; j++) {
+		for (int j = 0; j < boardSize; j++) {
 			if(board[i][j] == p) count++;
 		}
 		return count;
@@ -384,8 +382,8 @@ public abstract class BoardGame2P extends Game{
 	 */
 	protected double numOfPieces(Players p) {
 		int count = 0;
-		for (int i = 0; i < board.length; i++) {
-			for (int j = 0; j < board[i].length; j++) {
+		for (int i = 0; i < boardSize; i++) {
+			for (int j = 0; j < boardSize; j++) {
 				if(board[i][j] == p) count++;
 			}
 		}

@@ -3,7 +3,9 @@ package saveWekaFormat;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import weka.core.Attribute;
 import weka.core.DenseInstance;
@@ -20,14 +22,17 @@ public class WekaEncoder {
 	private int numPlayers;
 	private int numFeatures;
 	private int numAttributes;
-	private ArffSaver[] savers;
-	private Instances[] instances;
+	private List<ArffSaver> savers;
+	private List<Instances> instances;
+	private List<Map<String, Attribute>> firstStateMapping;
+	private List<Map<String, Attribute>> secondStateMapping;
+	private List<Attribute> decisions;
 
 	/**
 	 * Initializes a new WEKA encoder
 	 * 
 	 * @param features
-	 *            list of attributes describing the features in the game
+	 *            list of game's features names
 	 * @param directoryPath
 	 *            path to directory where files will be created
 	 * @param playerNames
@@ -35,80 +40,103 @@ public class WekaEncoder {
 	 * @throws IOException
 	 *             if save files for data could not open
 	 */
-	public WekaEncoder(List<Attribute> features, List<String> playerNames,
+	public WekaEncoder(List<String> features, List<String> playerNames,
 			String directoryPath) throws IOException {
 		this.numPlayers = playerNames.size();
 		numFeatures = features.size();
 		numAttributes = 2 * numFeatures + 1;
-		savers = new ArffSaver[numPlayers];
-		instances = new Instances[numPlayers];
+		savers = new ArrayList<ArffSaver>(numPlayers);
+		instances = new ArrayList<Instances>(numPlayers);
+		firstStateMapping = new ArrayList<Map<String,Attribute>>(numPlayers);
+		secondStateMapping = new ArrayList<Map<String,Attribute>>(numPlayers);
+		decisions = new ArrayList<Attribute>(numPlayers);
 
+		for (int player = 0; player < numPlayers; player++) {
+			ArffSaver saver = new ArffSaver();
+			saver.setDestination(new File(directoryPath + "/"
+					+ playerNames.get(player) + ".arff"));
+			saver.setFile(new File(directoryPath + "/" + playerNames.get(player)
+					+ ".arff"));
+			
+			ArrayList<Attribute> attributes = createExtendedFeatureVector(features);
+			
+			Instances instances = new Instances("state comparison", attributes, 0);
+			instances.setClassIndex(attributes.size() - 1);
+			saver.setStructure(instances);
+			saver.setCompressOutput(true);
+			saver.setRetrieval(ArffSaver.INCREMENTAL);
+			
+			this.instances.add(instances);
+			this.savers.add(saver);
+		}
+	}
+
+
+	/**
+	 * Create a list in the following structure:
+	 * <features state 1><features state 2><is 1 better than 2>
+	 * @param featureNames
+	 * @return
+	 */
+	private ArrayList<Attribute> createExtendedFeatureVector(List<String> featureNames) {
 		ArrayList<Attribute> attInfo = new ArrayList<Attribute>();
-		for (Attribute att : features)
-			attInfo.add(renameAttribute(att, att.name() + " (state 1)"));
-		for (Attribute att : features)
-			attInfo.add(renameAttribute(att, att.name() + " (state 2)"));
+		Map<String, Attribute> firstMap = new HashMap<String, Attribute>(numFeatures);
+		Map<String, Attribute> secondMap = new HashMap<String, Attribute>(numFeatures);
+		for (String attName : featureNames){
+			Attribute att = new Attribute(attName + " (state 1)");
+			firstMap.put(attName, att);
+			attInfo.add(att);
+		}
+		for (String attName : featureNames){
+			Attribute att = new Attribute(attName + " (state 2)");
+			secondMap.put(attName, att);
+			attInfo.add(att);
+		}
 		ArrayList<String> vals = new ArrayList<String>();
 		vals.add(IsFirstStateBetter.Yes.toString());
 		vals.add(IsFirstStateBetter.No.toString());
 		Attribute att = new Attribute("is first state better?", vals);
+		decisions.add(att);
 		attInfo.add(att);
-		
-		assert(attInfo.size() == numAttributes);
-
-		for (int i = 0; i < numPlayers; i++) {
-			savers[i] = new ArffSaver();
-			savers[i].setDestination(new File(directoryPath + "/"
-					+ playerNames.get(i) + ".arff"));
-			savers[i].setFile(new File(directoryPath + "/" + playerNames.get(i)
-					+ ".arff"));
-			ArrayList<Attribute> attributes = new ArrayList<Attribute>(attInfo);
-			instances[i] = new Instances("state comparison", attributes, 0);
-			instances[i].setClassIndex(attributes.size() - 1);
-			savers[i].setStructure(instances[i]);
-			savers[i].setCompressOutput(true);
-			savers[i].setRetrieval(ArffSaver.INCREMENTAL);
-		}
-	}
-
-	/**
-	 * Copy the attribute but give it a new name
-	 * 
-	 * @param att
-	 * @param name
-	 * @return
-	 */
-	private Attribute renameAttribute(Attribute att, String name) {
-		return new Attribute(name, att.getMetadata());
+		firstStateMapping.add(firstMap);
+		secondStateMapping.add(secondMap);
+		return attInfo;
 	}
 
 	/**
 	 * Encode data to WEKA file format
-	 * 
-	 * @param features1
+	 * @param fv1
 	 *            feature vector of state 1
-	 * @param features2
+	 * @param fv2
 	 *            feature vector of state 2
 	 * @param results
 	 *            for each player specifies if the first state is better
 	 */
-	public void encode(Double[] features1, Double[] features2, boolean[] results) {
+	public void encode(Map<String, Double> fv1, Map<String, Double> fv2, boolean[] results) {
 		assert (results.length == numPlayers);
-		assert (features1.length == numFeatures);
-		assert (features2.length == numFeatures);
+		assert (fv1.size() == numFeatures);
+		assert (fv2.size() == numFeatures);
 		for (int i = 0; i < numPlayers; i++) {
+			Instances instances = this.instances.get(i);
+			ArffSaver saver = this.savers.get(i);
 			Instance instance = new DenseInstance(numAttributes);
-			instance.setDataset(instances[i]);
-			for (int j = 0; j < numFeatures; j++) {
-				double d1 = features1[j];
-				double d2 = features2[j];
-				instance.setValue(j, d1);
-				instance.setValue(j + numFeatures, d2);
+			instance.setDataset(instances);
+			for(Map.Entry<String, Double> e: fv1.entrySet()){
+				instance.setValue(firstStateMapping.get(i).get(e.getKey()), e.getValue());
 			}
-			instance.setValue(numAttributes - 1,
+			for(Map.Entry<String, Double> e: fv2.entrySet()){
+				instance.setValue(secondStateMapping.get(i).get(e.getKey()), e.getValue());
+			}
+//			for (int j = 0; j < numFeatures; j++) {
+//				double d1 = fv1[j];
+//				double d2 = fv2[j];
+//				instance.setValue(j, d1);
+//				instance.setValue(j + numFeatures, d2);
+//			}
+			instance.setValue(decisions.get(i),
 					(results[i] ? IsFirstStateBetter.Yes.toString()
 							: IsFirstStateBetter.No.toString()));
-			try {savers[i].writeIncremental(instance);} catch (IOException e) {}
+			try {saver.writeIncremental(instance);} catch (IOException e) {}
 		}
 	}
 
@@ -117,51 +145,12 @@ public class WekaEncoder {
 	 * @throws IOException
 	 */
 	public void endSave() {
-		for(int i = 0; i < numPlayers; i++)
+		for(ArffSaver saver: savers)
 			try {
-				savers[i].writeIncremental(null);
+				saver.writeIncremental(null);
 			} catch (IOException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 	}
-
-	// sample code
-//	public static void main(String[] args) {
-//		List<Attribute> features = new ArrayList<Attribute>();
-//		features.add(new Attribute("num pieces white"));
-//		features.add(new Attribute("num pieces black"));
-//		List<String> players = new ArrayList<String>();
-//		players.add("WHITE");
-//		players.add("BLACK");
-//		try {
-//			WekaEncoder encoder = new WekaEncoder(features, players,
-//					"./reversi");
-//			Double[] f1 = new Double[2];
-//			Double[] f2 = new Double[2];
-//			boolean[] res1 = new boolean[2];
-//			boolean[] res2 = new boolean[2];
-//			f1[0] = 0.0;
-//			f1[1] = 1.0;
-//			f2[0] = 1.0;
-//			f2[1] = 0.0;
-//			res1[0] = false;
-//			res1[1] = true;
-//			res2[0] = true;
-//			res2[1] = false;
-//			
-//			//save all instances
-//			for(int i = 0; i < 50000; i++){
-//				encoder.encode(f1, f2, res1);
-//				encoder.encode(f2, f1, res2);	
-//			}
-//			
-//			//close files n' stuff...
-//			encoder.endSave();
-//		} catch (IOException e) {
-//			// TODO Auto-generated catch block
-//			e.printStackTrace();
-//		}
-//	}
 
 }
