@@ -4,6 +4,9 @@ import java.util.Map;
 
 /**
  * Class for representing an example classified for all players
+ * The example is consisted of 2 feature vectors - 1 for each state,
+ * and an array of booleans representing for each player if the first
+ * state is better than the second state.
  * @author Ophir De Jager
  *
  */
