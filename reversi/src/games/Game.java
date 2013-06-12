@@ -4,8 +4,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
-import weka.core.Attribute;
-
 /**
  * 
  * @author Ziv Ronen, Ophir De Jager

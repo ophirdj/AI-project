@@ -1,178 +1,173 @@
 package checking;
 
 import games.Game;
+import games.Game.NoNextStateException;
 import games.Reversi;
 
-import java.io.IOException;
-import java.util.ArrayList;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.List;
 
+import saveWekaFormat.ExampleResult;
 import saveWekaFormat.WekaEncoder;
 
 public class Tst {
 	
-	public static final int numGames = 500;
-
 	/**
-	 * @param args
-	 * @throws NoNextStateException 
+	 * Specify what sort of examples (game states) we want to learn from
+	 * @author Ophir De Jager
+	 *
 	 */
-	public static void main(String[] args) throws Exception {	
-		String directory = "./reversi";
+	private static enum SupportedModes {
+		/**
+		 * All examples are terminal game states
+		 */
+		TERMINAL_STATE
+		;
+	}
+	
+	
+	
+	/**
+	 * Class for generically accessing basic game features such as players, features and initial state
+	 * @author Ophir De Jager
+	 *
+	 */
+	private static class GameIdentifier {
+
+		private Class<? extends Game> game;
+		private Object[] initParams;
+		private Constructor<? extends Game> constructor;
+		private Method players;
+		private Method features;
+
 		
-		List<String> players = new ArrayList<String>();
-		players.add("WHITE");
-		players.add("BLACK");
-		
-		int boardSize = 8;
-		
-		List<String> features = Reversi.getFeatures(boardSize);
-		
-		WekaEncoder encoder;
-		try {
-			encoder = new WekaEncoder(features, players, directory);
-		} catch (IOException e) {
-			e.printStackTrace();
-			return;
+		public GameIdentifier(Class<? extends Game> game, Object... initParams) throws SecurityException, NoSuchMethodException, IllegalArgumentException, IllegalAccessException, InvocationTargetException {
+			this.game = game;
+			this.initParams = initParams;
+			Class<?>[] types = new Class<?>[initParams.length];
+			for(int i = 0; i < types.length; i++)
+				types[i] = initParams[i].getClass();
+			this.constructor = game.getConstructor(types);
+			this.players = game.getMethod("getPlayers");
+			this.features = game.getMethod("getFeatures", types);
 		}
 		
-		for(int i = 0; i < numGames; i++){
-		
-			Game game1 = new Reversi(boardSize);
-			Game game2 = new Reversi(boardSize);
-			
-			while(!game1.isTerminalState()){
-				game1 = game1.getNextRandomState();
-			}
-			while(!game2.isTerminalState()){
-				game2 = game2.getNextRandomState();
-			}
-			
-			boolean result = game1.getHeuristic() > game2.getHeuristic();
-			boolean[] results = new boolean[2];
-			results[0] = result;
-			results[1] = !result;
-			encoder.encode(game1.getFeaturesValues(),game2.getFeaturesValues(),results);
-			
+		public Game newGame() throws IllegalArgumentException, InstantiationException, IllegalAccessException, InvocationTargetException{
+			return constructor.newInstance(initParams);
 		}
 		
+		/**
+		 * Get players names.
+		 * The game class must support the method: public static List<String> getPlayers()
+		 * @return list of players names
+		 * @throws IllegalArgumentException
+		 * @throws IllegalAccessException
+		 * @throws InvocationTargetException
+		 */
+		@SuppressWarnings("unchecked")
+		public List<String> getPlayers() throws IllegalArgumentException, IllegalAccessException, InvocationTargetException{
+			return (List<String>) players.invoke(null);
+		}
+		
+		/**
+		 * Get features names for the game.
+		 * The game class must support the method: public static List<String> getFeatures(<constructor parameters>)
+		 * where <constructor parameters> are the parameter types the game constructor needs
+		 * @return list of features names
+		 * @throws IllegalArgumentException
+		 * @throws IllegalAccessException
+		 * @throws InvocationTargetException
+		 */
+		@SuppressWarnings("unchecked")
+		public List<String> getFeatures() throws IllegalArgumentException, IllegalAccessException, InvocationTargetException{
+			return (List<String>) features.invoke(null, initParams);
+		}
+
+		/**
+		 * Get the name of the game
+		 * @return game name
+		 */
+		public String getGameName() {
+			return game.getSimpleName();
+		}
+		
+	}
+	
+
+	
+	
+	
+	
+	
+	
+	
+	public static final int NUM_GAMES = 100;
+	
+	
+	public static void main(String[] args) throws Exception{
+		Object initParams[] = new Object[1];
+		initParams[0] = new Integer(8);
+		GameIdentifier game = new GameIdentifier(Reversi.class, initParams);
+		createExamples(game, SupportedModes.TERMINAL_STATE, NUM_GAMES);
+	}
+	
+	
+	
+	
+	
+	/**
+	 * Create game examples as specified in the given parameters
+	 * @param game game to be played
+	 * @param mode type of examples to be created
+	 * @param numExamples number of examples to be created
+	 * @throws Exception if there was a problem with encoder or game
+	 */
+	private static void createExamples(GameIdentifier game, SupportedModes mode, int numExamples) throws Exception{
+		if(numExamples <= 0) return;
+		
+		String directory = "./" + game.getGameName().toLowerCase();
+		List<String> players = game.getPlayers();
+		List<String> features = game.getFeatures();
+		WekaEncoder encoder = new WekaEncoder(features, players, directory);
+		
+		for(int i = 0; i < numExamples; i++){
+			ExampleResult example;
+			switch(mode){
+			case TERMINAL_STATE:
+				example = terminalStateExamples(game.newGame());
+				break;
+			default:
+				throw new Exception("game mode is not supported: " + mode.toString());
+			}
+			encoder.encode(example);
+		}
 		encoder.endSave();
 	}
 	
-//	public static void main(String[] args) throws Exception{
-//		int[] board[] = new int[6][6];
-//		Random rnd = new Random();
-//		for (int i = 0; i < board.length; i++) {
-//			for (int j = 0; j < board[i].length; j++) {
-//				board[i][j] = rnd.nextInt(2);
-//			}
-//		}
-//		System.out.println();
-//		printArray(board);
-////		System.out.println();
-////		System.out.println("center 0 small: "+numOfPiecesCenter(board,board.length,0,2-(board.length & 1)));
-////		System.out.println("center 1 small: "+numOfPiecesCenter(board,board.length,1,2-(board.length & 1)));
-////		System.out.println("center 0 large: "+numOfPiecesCenter(board,board.length,0,4-(board.length & 1)));
-////		System.out.println("center 1 large: "+numOfPiecesCenter(board,board.length,1,4-(board.length & 1)));
-////		System.out.println();
-////		System.out.println("corners 0 small: "+numOfPiecesCorner(board,board.length,0,1));
-////		System.out.println("corners 1 small: "+numOfPiecesCorner(board,board.length,1,1));
-////		System.out.println("corners 0 large: "+numOfPiecesCorner(board,board.length,0,2));
-////		System.out.println("corners 1 large: "+numOfPiecesCorner(board,board.length,1,2));
-////		for (int i = 0; i < 2 * board.length - 1; i++) {
-////			System.out.println();
-////			System.out.println("main 0 diagonal " + (i+1) +": "+numOfPiecesMainDiagonal(board,board.length,0,i));
-////			System.out.println("main 1 diagonal " + (i+1) +": "+numOfPiecesMainDiagonal(board,board.length,1,i));
-////		}
-//		for (int i = 0; i < 2 * board.length - 1; i++) {
-//			System.out.println();
-//			System.out.println("main 0 diagonal " + (i+1) +": "+numOfPiecesSubDiagonal(board,board.length,0,i));
-//			System.out.println("main 1 diagonal " + (i+1) +": "+numOfPiecesSubDiagonal(board,board.length,1,i));
-//		}
-//	}
-//	
-//	public static void printArray(int[][] board){
-//		for (int i = 0; i < board.length; i++) {
-//			for (int j = 0; j < board[i].length; j++) {
-//				System.out.print(board[i][j]);
-//				System.out.print(" ");
-//			}
-//			System.out.println();
-//		}
-//	}
-//	
-//	private static double numOfPiecesCenter(int[][] board,int boardSize,int p,int edgeSize) {
-//		int count = 0;
-//		int fixDirection = (edgeSize-1)/2;
-//		int center = boardSize/2;
-//		int d = (boardSize + 1) & 1;
-//		int startRow = center-d-fixDirection;
-//		int startCol = center-d-fixDirection;;
-//		int endRow = center+fixDirection;
-//		int endCol = center+fixDirection;
-//		for (int i = startRow; i <= endRow; i++) {
-//			for (int j = startCol; j <= endCol; j++) {
-//				if(p == board[i][j]) count++;
-//			}
-//		}
-//		return count;
-//	}
-//	
-//	private static double numOfPiecesCorner(int[][] board,int boardSize,int p,int cornerSize) {
-//		int count = 0;
-//		for (int i = 0; i < cornerSize; i++) {
-//			for (int j = 0; j < cornerSize; j++) {
-//				if(p == board[i][j]) count++;
-//			}
-//		}
-//		for (int i = 0; i < cornerSize; i++) {
-//			for (int j = boardSize - cornerSize; j < boardSize; j++) {
-//				if(p == board[i][j]) count++;
-//			}
-//		}
-//		for (int i = boardSize - cornerSize; i < boardSize; i++) {
-//			for (int j = 0; j < cornerSize; j++) {
-//				if(p == board[i][j]) count++;
-//			}
-//		}
-//		for (int i = boardSize - cornerSize; i < boardSize; i++) {
-//			for (int j = boardSize - cornerSize; j < boardSize; j++) {
-//				if(p == board[i][j]) count++;
-//			}
-//		}
-//		return count;
-//	}
-//	
-//
-//	private static double numOfPiecesMainDiagonal(int[][] board,int boardSize,int p,int diagonal) {
-//		int count = 0;
-//		if( diagonal < boardSize){
-//			for (int j = diagonal; j < boardSize; j++) {
-//				if(p == board[j-diagonal][j]) count++;
-//			}
-//		}
-//		else{
-//			int startValue = diagonal - boardSize + 1;
-//			for (int i = startValue; i < boardSize; i++) {
-//				if(p == board[i][i-startValue]) count++;
-//			}
-//		}
-//		return count;
-//	}
-//	
-//	private static double numOfPiecesSubDiagonal(int[][] board,int boardSize,int p,int diagonal) {
-//		int count = 0;
-//		if( diagonal < boardSize){
-//			for (int j = 0; j <= diagonal; j++) {
-//				if(p == board[diagonal-j][j]) count++;
-//			}
-//		}
-//		else{
-//			int value = diagonal - boardSize + 1;
-//			for (int i = value; i < boardSize; i++) {
-//				if(p == board[i][diagonal-i]) count++;
-//			}
-//		}
-//		return count;
-//	}
+	
+	/**
+	 * Create example of a pair of terminal game states
+	 * @param initialState initial game state
+	 * @param encoder will save examples
+	 * @param numExamples number of examples
+	 */
+	private static ExampleResult terminalStateExamples(Game initialState){
+		Game game1 = initialState;
+		Game game2 = initialState;
+		while(!game1.isTerminalState()){
+			try {game1 = game1.getNextRandomState();} catch (NoNextStateException e) {}
+		}
+		while(!game2.isTerminalState()){
+			try {game2 = game2.getNextRandomState();} catch (NoNextStateException e) {}
+		}
+		boolean result = game1.getHeuristic() > game2.getHeuristic();
+		boolean[] results = new boolean[2];
+		results[0] = result;
+		results[1] = !result;
+		return new ExampleResult(game1.getFeaturesValues(), game2.getFeaturesValues(), results);
+	}
+	
+	
 }

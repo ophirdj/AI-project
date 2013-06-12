@@ -8,7 +8,7 @@ public class Reversi extends BoardGame2P {
 	private int turn;
 	private Players player;
 	
-	public Reversi(int size) {
+	public Reversi(Integer size) {
 		super(size);
 		int startRow = size/2-1;
 		int startCol = size/2-1;

@@ -104,37 +104,26 @@ public class WekaEncoder {
 	}
 
 	/**
-	 * Encode data to WEKA file format
-	 * @param fv1
-	 *            feature vector of state 1
-	 * @param fv2
-	 *            feature vector of state 2
-	 * @param results
-	 *            for each player specifies if the first state is better
+	 * Encode a single example to WEKA file format
+	 * @param example
 	 */
-	public void encode(Map<String, Double> fv1, Map<String, Double> fv2, boolean[] results) {
-		assert (results.length == numPlayers);
-		assert (fv1.size() == numFeatures);
-		assert (fv2.size() == numFeatures);
+	public void encode(ExampleResult example) {
+		assert (example.getResults().length == numPlayers);
+		assert (example.getFeatureVector1().size() == numFeatures);
+		assert (example.getFeatureVector2().size() == numFeatures);
 		for (int i = 0; i < numPlayers; i++) {
 			Instances instances = this.instances.get(i);
 			ArffSaver saver = this.savers.get(i);
 			Instance instance = new DenseInstance(numAttributes);
 			instance.setDataset(instances);
-			for(Map.Entry<String, Double> e: fv1.entrySet()){
+			for(Map.Entry<String, Double> e: example.getFeatureVector1().entrySet()){
 				instance.setValue(firstStateMapping.get(i).get(e.getKey()), e.getValue());
 			}
-			for(Map.Entry<String, Double> e: fv2.entrySet()){
+			for(Map.Entry<String, Double> e: example.getFeatureVector2().entrySet()){
 				instance.setValue(secondStateMapping.get(i).get(e.getKey()), e.getValue());
 			}
-//			for (int j = 0; j < numFeatures; j++) {
-//				double d1 = fv1[j];
-//				double d2 = fv2[j];
-//				instance.setValue(j, d1);
-//				instance.setValue(j + numFeatures, d2);
-//			}
 			instance.setValue(decisions.get(i),
-					(results[i] ? IsFirstStateBetter.Yes.toString()
+					(example.getResults()[i] ? IsFirstStateBetter.Yes.toString()
 							: IsFirstStateBetter.No.toString()));
 			try {saver.writeIncremental(instance);} catch (IOException e) {}
 		}

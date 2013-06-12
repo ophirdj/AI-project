@@ -72,7 +72,7 @@ public abstract class BoardGame2P extends Game{
 	 */
 	protected final int boardSize;
 	
-	public BoardGame2P(int size) {
+	public BoardGame2P(Integer size) {
 		board = new Players[size][size];
 		boardSize = size;
 		for (int i = 0; i < boardSize; i++) {
@@ -92,13 +92,24 @@ public abstract class BoardGame2P extends Game{
 			}
 		}
 	}
+	
+	/**
+	 * 
+	 * @return list of player names
+	 */
+	public static List<String> getPlayers(){
+		List<String> players = new ArrayList<String>();
+		players.add("WHITE");
+		players.add("BLACK");
+		return players;
+	}
 
 	/**
 	 * 
 	 * @param boardSize - board size
 	 * @return the list of features used to value a board
 	 */
-	public static List<String> getFeatures(int boardSize) {
+	public static List<String> getFeatures(Integer boardSize) {
 		List<String> features = new ArrayList<String>();
 		features.add(new String("num pieces (white)"));
 		features.add(new String("num pieces (black)"));
