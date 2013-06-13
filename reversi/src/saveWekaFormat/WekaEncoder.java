@@ -107,7 +107,7 @@ public class WekaEncoder {
 	 * Encode a single example to WEKA file format
 	 * @param example
 	 */
-	public void encode(ExampleResult example) {
+	public synchronized void encode(ExampleResult example) {
 		assert (example.getResults().length == numPlayers);
 		assert (example.getFeatureVector1().size() == numFeatures);
 		assert (example.getFeatureVector2().size() == numFeatures);
@@ -133,7 +133,7 @@ public class WekaEncoder {
 	 * Terminates savings & close files
 	 * @throws IOException
 	 */
-	public void endSave() {
+	public synchronized void endSave() {
 		for(ArffSaver saver: savers)
 			try {
 				saver.writeIncremental(null);

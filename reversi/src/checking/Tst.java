@@ -15,7 +15,7 @@ import saveWekaFormat.WekaEncoder;
 
 public class Tst {
 	
-	public static final int NUM_GAMES = 10;
+	public static final int NUM_GAMES = 100;
 	
 	
 	public static void main(String[] args) throws Exception{
@@ -41,14 +41,50 @@ public class Tst {
 		List<String> filenames = new ArrayList<String>(players.size());
 		for(String player: players) filenames.add(mode.name() + " - " + player.toLowerCase());
 		WekaEncoder encoder = new WekaEncoder(features, filenames, directory);
-		for(int i = 0; i < numExamples; i++){
+		int cores = Runtime.getRuntime().availableProcessors();
+		int examplesPerThread = numExamples / cores;
+		int examplesPrimaryThread = numExamples - examplesPerThread * (cores - 1);
+		List<Thread> threads = new ArrayList<Thread>(cores-1);
+		for(int i = 0; i < cores - 1; i++){
+			threads.add(new Thread(new ExampleWorker(game, mode, numExamples, encoder)));
+		}
+		for(Thread thread: threads){
+			thread.start();
+		}
+		for(int i = 0; i < examplesPrimaryThread; i++){
 			encoder.encode(mode.getExample(game.newGame()));
+		}
+		for(Thread thread: threads){
+			thread.join();
 		}
 		encoder.endSave();
 	}
 	
 	
 	
+	
+	private static class ExampleWorker implements Runnable{
+		
+		private GameIdentifier game;
+		private ExampleMode mode;
+		private int numExamples;
+		private WekaEncoder encoder;
+
+		public ExampleWorker(GameIdentifier game, ExampleMode mode, int numExamples, WekaEncoder encoder){
+			this.game = game;
+			this.mode = mode;
+			this.numExamples = numExamples;
+			this.encoder = encoder;
+		}
+
+		@Override
+		public void run() {
+			for(int i = 0; i < numExamples; i++){
+				try {encoder.encode(mode.getExample(game.newGame()));} catch (Exception e) {break;}
+			}
+		}
+		
+	}
 	
 	
 	
