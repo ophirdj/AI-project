@@ -1,7 +1,7 @@
 package checking;
 
 import exampleModes.ExampleMode;
-import exampleModes.TerminalStateExample;
+import exampleModes.MinmaxExample;
 import games.Game;
 import games.Reversi;
 
@@ -21,7 +21,7 @@ public class Tst {
 		Object initParams[] = new Object[1];
 		initParams[0] = new Integer(8);
 		GameIdentifier game = new GameIdentifier(Reversi.class, initParams);
-		createExamples(game, new TerminalStateExample(), NUM_GAMES);
+		createExamples(game, new MinmaxExample(10), NUM_GAMES);
 	}
 	
 	

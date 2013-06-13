@@ -2,6 +2,7 @@ package exampleModes;
 
 import games.Game;
 import games.Game.NoNextStateException;
+import games.Game.NotTerminalStateException;
 import saveWekaFormat.ExampleResult;
 
 public class TerminalStateExample implements ExampleMode {
@@ -16,10 +17,12 @@ public class TerminalStateExample implements ExampleMode {
 		while(!game2.isTerminalState()){
 			try {game2 = game2.getNextRandomState();} catch (NoNextStateException e) {}
 		}
-		boolean result = game1.getHeuristic() > game2.getHeuristic();
-		boolean[] results = new boolean[2];
-		results[0] = result;
-		results[1] = !result;
+		boolean[] results = new boolean[initialState.getNumPlayers()];
+		for(int player = 0; player < initialState.getNumPlayers(); player++){
+			try {
+				results[player] = game1.goalValue(player) > game2.goalValue(player);
+			} catch (NotTerminalStateException e) {}
+		}
 		return new ExampleResult(game1.getFeaturesValues(), game2.getFeaturesValues(), results);
 	}
 

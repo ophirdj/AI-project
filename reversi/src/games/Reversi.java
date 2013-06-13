@@ -3,7 +3,7 @@ package games;
 import java.util.ArrayList;
 import java.util.List;
 
-public class Reversi extends BoardGame2P {
+public class Reversi extends BoardGame2P implements ZeroSumGame{
 
 	private int turn;
 	private Players player;
