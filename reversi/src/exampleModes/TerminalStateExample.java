@@ -26,4 +26,9 @@ public class TerminalStateExample implements ExampleMode {
 		return new ExampleResult(game1.getFeaturesValues(), game2.getFeaturesValues(), results);
 	}
 
+	@Override
+	public String name() {
+		return "terminal state";
+	}
+
 }

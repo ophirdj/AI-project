@@ -8,13 +8,14 @@ import games.Reversi;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.util.List;
 
 import saveWekaFormat.WekaEncoder;
 
 public class Tst {
 	
-	public static final int NUM_GAMES = 100;
+	public static final int NUM_GAMES = 10;
 	
 	
 	public static void main(String[] args) throws Exception{
@@ -34,12 +35,12 @@ public class Tst {
 	 */
 	private static void createExamples(GameIdentifier game, ExampleMode mode, int numExamples) throws Exception{
 		if(numExamples <= 0) return;
-		
 		String directory = "./" + game.getGameName().toLowerCase();
 		List<String> players = game.getPlayers();
 		List<String> features = game.getFeatures();
-		WekaEncoder encoder = new WekaEncoder(features, players, directory);
-		
+		List<String> filenames = new ArrayList<String>(players.size());
+		for(String player: players) filenames.add(mode.name() + " - " + player.toLowerCase());
+		WekaEncoder encoder = new WekaEncoder(features, filenames, directory);
 		for(int i = 0; i < numExamples; i++){
 			encoder.encode(mode.getExample(game.newGame()));
 		}

@@ -17,4 +17,10 @@ public interface ExampleMode {
 	 */
 	ExampleResult getExample(Game initialState);
 	
+	/**
+	 * 
+	 * @return the mode's name
+	 */
+	String name();
+	
 }

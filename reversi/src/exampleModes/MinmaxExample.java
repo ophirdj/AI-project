@@ -141,4 +141,9 @@ public class MinmaxExample implements ExampleMode {
 		}
 	}
 
+	@Override
+	public String name() {
+		return "minmax";
+	}
+
 }
