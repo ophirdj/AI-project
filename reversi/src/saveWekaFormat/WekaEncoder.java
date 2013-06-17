@@ -27,6 +27,8 @@ public class WekaEncoder {
 	private List<Map<String, Attribute>> firstStateMapping;
 	private List<Map<String, Attribute>> secondStateMapping;
 	private List<Attribute> decisions;
+	private List<Map<String, Attribute>> differenceMapping;
+	private List<Map<String, Attribute>> divisionMapping;
 
 	/**
 	 * Initializes a new WEKA encoder
@@ -44,11 +46,13 @@ public class WekaEncoder {
 			String directoryPath) throws IOException {
 		this.numPlayers = playerNames.size();
 		numFeatures = features.size();
-		numAttributes = 2 * numFeatures + 1;
+		numAttributes = 4 * numFeatures + 1;
 		savers = new ArrayList<ArffSaver>(numPlayers);
 		instances = new ArrayList<Instances>(numPlayers);
 		firstStateMapping = new ArrayList<Map<String,Attribute>>(numPlayers);
 		secondStateMapping = new ArrayList<Map<String,Attribute>>(numPlayers);
+		differenceMapping = new ArrayList<Map<String,Attribute>>(numPlayers);
+		divisionMapping = new ArrayList<Map<String,Attribute>>(numPlayers);
 		decisions = new ArrayList<Attribute>(numPlayers);
 
 		for (int player = 0; player < numPlayers; player++) {
@@ -74,7 +78,7 @@ public class WekaEncoder {
 
 	/**
 	 * Create a list in the following structure:
-	 * <features state 1><features state 2><is 1 better than 2>
+	 * <features state 1><features state 2><features state 1-2><features state 1/2><is 1 better than 2>
 	 * @param featureNames
 	 * @return
 	 */
@@ -82,6 +86,8 @@ public class WekaEncoder {
 		ArrayList<Attribute> attInfo = new ArrayList<Attribute>();
 		Map<String, Attribute> firstMap = new HashMap<String, Attribute>(numFeatures);
 		Map<String, Attribute> secondMap = new HashMap<String, Attribute>(numFeatures);
+		Map<String, Attribute> differenceMap = new HashMap<String, Attribute>(numFeatures);
+		Map<String, Attribute> divisionMap = new HashMap<String, Attribute>(numFeatures);
 		for (String attName : featureNames){
 			Attribute att = new Attribute(attName + " (state 1)");
 			firstMap.put(attName, att);
@@ -92,6 +98,16 @@ public class WekaEncoder {
 			secondMap.put(attName, att);
 			attInfo.add(att);
 		}
+		for (String attName : featureNames){
+			Attribute att = new Attribute(attName + " (state 1 - state 2)");
+			differenceMap.put(attName, att);
+			attInfo.add(att);
+		}
+		for (String attName : featureNames){
+			Attribute att = new Attribute(attName + " (state 1 / state 2)");
+			divisionMap.put(attName, att);
+			attInfo.add(att);
+		}
 		ArrayList<String> vals = new ArrayList<String>();
 		vals.add(IsFirstStateBetter.Yes.toString());
 		vals.add(IsFirstStateBetter.No.toString());
@@ -100,6 +116,8 @@ public class WekaEncoder {
 		attInfo.add(att);
 		firstStateMapping.add(firstMap);
 		secondStateMapping.add(secondMap);
+		differenceMapping.add(differenceMap);
+		divisionMapping.add(divisionMap);
 		return attInfo;
 	}
 
@@ -116,11 +134,13 @@ public class WekaEncoder {
 			ArffSaver saver = this.savers.get(i);
 			Instance instance = new DenseInstance(numAttributes);
 			instance.setDataset(instances);
-			for(Map.Entry<String, Double> e: example.getFeatureVector1().entrySet()){
-				instance.setValue(firstStateMapping.get(i).get(e.getKey()), e.getValue());
-			}
-			for(Map.Entry<String, Double> e: example.getFeatureVector2().entrySet()){
-				instance.setValue(secondStateMapping.get(i).get(e.getKey()), e.getValue());
+			for(String feature: example.getFeatureVector1().keySet()){
+				double v1 = example.getFeatureVector1().get(feature);
+				double v2 = example.getFeatureVector2().get(feature);
+				instance.setValue(firstStateMapping.get(i).get(feature), v1);
+				instance.setValue(secondStateMapping.get(i).get(feature), v2);
+				instance.setValue(differenceMapping.get(i).get(feature), v1 - v2);
+				instance.setValue(divisionMapping.get(i).get(feature), v1 / (v2 + 0.01));
 			}
 			instance.setValue(decisions.get(i),
 					(example.getResults()[i] ? IsFirstStateBetter.Yes.toString()
