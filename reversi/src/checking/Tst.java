@@ -11,18 +11,22 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 
+import classifiers.J48Pruned;
+import classifiers.LoadExamples;
+
 import saveWekaFormat.WekaEncoder;
 
 public class Tst {
 	
-	public static final int NUM_GAMES = 100;
+	public static final int NUM_GAMES = 1000;
 	
 	
 	public static void main(String[] args) throws Exception{
 		Object initParams[] = new Object[1];
 		initParams[0] = new Integer(8);
 		GameIdentifier game = new GameIdentifier(Reversi.class, initParams);
-		createExamples(game, new MinmaxExample(10), NUM_GAMES);
+		createExamples(game, new MinmaxExample(6), NUM_GAMES);
+		J48Pruned.tune(LoadExamples.loadExamples("./reversi/minmax - white.arff"));
 	}
 	
 	
@@ -46,7 +50,7 @@ public class Tst {
 		int examplesPrimaryThread = numExamples - examplesPerThread * (cores - 1);
 		List<Thread> threads = new ArrayList<Thread>(cores-1);
 		for(int i = 0; i < cores - 1; i++){
-			threads.add(new Thread(new ExampleWorker(game, mode, numExamples, encoder)));
+			threads.add(new Thread(new ExampleWorker(game, mode, examplesPerThread, encoder)));
 		}
 		for(Thread thread: threads){
 			thread.start();
